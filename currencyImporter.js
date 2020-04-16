@@ -3,7 +3,7 @@ const axios = require('axios');
 async function fetchData(){
     let data;
     try {
-        const response = await axios.get("https://api.exchangeratesapi.io/latest");
+        const response = await axios.get("https://prime.exchangerate-api.com/v5/218c74784e69efd198ea4f5b/latest/EUR");
         data = response.data;
     } catch (error) {
         console.error("There was an error fetching the data in main: ", error);
@@ -23,18 +23,25 @@ function connectToDb(){
 
 function insertIntoDb(connection, data){
     let sql=[];
-    const rates = Object.keys(data.rates);
-    const values = Object.values(data.rates);
+    const conversion_rates = Object.keys(data.conversion_rates);
+    const values = Object.values(data.conversion_rates);
     const base = data.base;
-    const date = data.date;
-    
+    let unixTimestamp = data.time_last_update;
+    var date = new Date(unixTimestamp * 1000);
+    var formattedDate = date.toISOString().split('T')[0]
+    var now = new Date();
+    var timeTs = [ now.getHours(), now.getMinutes(), now.getSeconds() ];
+    var timeStamp = formattedDate  + " " + timeTs.join(":") + " ";
+
+    console.log(unixTimestamp)
         //create the same line as in DB: insert into currency_rates (currency_name, base_currency, value, date) values ('CAD', 'EUR', 1.5265, '2020-04-09');
 
-    for (let i = 0; i < rates.length; i++){
-            const str = `insert into currency_rates (currency_name, base_currency, value, date) values ('${rates[i]}', '${base}', ${values[i]}, '${date}')`;
+    for (let i = 0; i < conversion_rates.length; i++){
+            const str = `insert into currency_rates (currency_name, base_currency, value, date, time_stamp) values ('${conversion_rates[i]}', '${base}', ${values[i]}, '${formattedDate}', '${timeStamp}')`;
             sql.push(str)
     }
     const stringSql = sql.join(" ; ")
+    console.log(stringSql)
     connection.query(stringSql, function (err, result){
         console.log("1 record inserted");
     })
