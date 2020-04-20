@@ -3,7 +3,7 @@ const axios = require('axios');
 async function fetchData(){
     let data;
     try {
-        const response = await axios.get("https://prime.exchangerate-api.com/v5/218c74784e69efd198ea4f5b/latest/EUR");
+        const response = await axios.get("https://api.exchangeratesapi.io/latest");
         data = response.data;
     } catch (error) {
         console.error("There was an error fetching the data in main: ", error);
@@ -23,26 +23,34 @@ function connectToDb(){
 
 function insertIntoDb(connection, data){
     let sql=[];
-    const conversion_rates = Object.keys(data.conversion_rates);
-    const values = Object.values(data.conversion_rates);
+    // console.log(data);
+    const conversion_rates = JSON.stringify(data.rates);
     const base = data.base;
-    let unixTimestamp = data.time_last_update;
-    var date = new Date(unixTimestamp * 1000);
-    var formattedDate = date.toISOString().split('T')[0]
-    var now = new Date();
-    var timeTs = [ now.getHours(), now.getMinutes(), now.getSeconds() ];
-    var timeStamp = formattedDate  + " " + timeTs.join(":") + " ";
+    var date = data.date;
+    console.log(data.rates)
+    // var now = new Date();
+    // var timeTs = [ now.getHours(), now.getMinutes(), now.getSeconds() ];
+    // var timeStamp = date  + " " + timeTs.join(":") + " ";
 
-    console.log(unixTimestamp)
         //create the same line as in DB: insert into currency_rates (currency_name, base_currency, value, date) values ('CAD', 'EUR', 1.5265, '2020-04-09');
 
-    for (let i = 0; i < conversion_rates.length; i++){
-            const str = `insert into currency_rates (currency_name, base_currency, value, date, time_stamp) values ('${conversion_rates[i]}', '${base}', ${values[i]}, '${formattedDate}', '${timeStamp}')`;
-            sql.push(str)
-    }
-    const stringSql = sql.join(" ; ")
-    console.log(stringSql)
-    connection.query(stringSql, function (err, result){
+    // for (let i = 0; i < conversion_rates.length; i++){
+    //     const str = `insert into currency_rates (rates, base, date) values ('{"${conversion_rates[i]}": ${conversion_values[i]}}', '${base}', '${date}')`
+    //     sql.push(str)
+    // }
+    const str = `delete from currency_rates where rates is not null; insert into currency_rates (rates, base, date) values ('${conversion_rates}', '${base}', '${date}')`
+    
+    // const stringSql = sql.join("; ")
+    // // console.log(stringSql)
+    // // const deletePrevious = `delete from currency_rates where rates is not null; 
+    console.log(str)
+ 
+    // console.log(stringSql)
+    
+    // const returnStringSql = deletePrevious + sql;
+    // console.log(returnStringSql)
+    
+    connection.query(str, function (err, result){
         console.log("1 record inserted");
     })
 }
